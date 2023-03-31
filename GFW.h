@@ -5,9 +5,9 @@ Class steers the initialization and calculation of n-particle correlations. Uses
 Latest version includes the calculation of any number of gaps and any combination of harmonics (including eg symmetric cumulants, etc.)
 If used, modified, or distributed, please aknowledge the author of this code.
 */
-#ifndef AliGFW__H
-#define AliGFW__H
-#include "AliGFWCumulant.h"
+#ifndef GFW__H
+#define GFW__H
+#include "GFWCumulant.h"
 #include <vector>
 #include <utility>
 #include <algorithm>
@@ -15,7 +15,7 @@ If used, modified, or distributed, please aknowledge the author of this code.
 using std::vector;
 using std::complex;
 using std::string;
-class AliGFW {
+class GFW {
  public:
   struct Region {
     int Nhar, Npar, NpT;
@@ -37,23 +37,23 @@ class AliGFW {
     bool pTDif=false;
     string Head="";
   };
-  AliGFW();
-  ~AliGFW();
+  GFW();
+  ~GFW();
   vector<Region> fRegions;
-  vector<AliGFWCumulant> fCumulants;
+  vector<GFWCumulant> fCumulants;
   void AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double lEtaMax, int lNpT=1, int BitMask=1);
   void AddRegion(string refName, int lNhar, int *lNparVec, double lEtaMin, double lEtaMax, int lNpT=1, int BitMask=1);
   int CreateRegions();
   void Fill(double eta, int ptin, double phi, double weight, int mask, double secondWeight=-1);
   void Clear();
-  AliGFWCumulant GetCumulant(int index) { return fCumulants.at(index); };
+  GFWCumulant GetCumulant(int index) { return fCumulants.at(index); };
   CorrConfig GetCorrelatorConfig(string config, string head = "", bool ptdif=false);
   complex<double> Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero, bool DisableOverlap=false);
 public:
   bool fInitialized;
-  complex<double> TwoRec(int n1, int n2, int p1, int p2, int ptbin, AliGFWCumulant*, AliGFWCumulant*, AliGFWCumulant*);
-  complex<double> RecursiveCorr(AliGFWCumulant *qpoi, AliGFWCumulant *qref, AliGFWCumulant *qol, int ptbin, vector<int> &hars, vector<int> &pows); //POI, Ref. flow, overlapping region
-  complex<double> RecursiveCorr(AliGFWCumulant *qpoi, AliGFWCumulant *qref, AliGFWCumulant *qol, int ptbin, vector<int> &hars); //POI, Ref. flow, overlapping region
+  complex<double> TwoRec(int n1, int n2, int p1, int p2, int ptbin, GFWCumulant*, GFWCumulant*, GFWCumulant*);
+  complex<double> RecursiveCorr(GFWCumulant *qpoi, GFWCumulant *qref, GFWCumulant *qol, int ptbin, vector<int> &hars, vector<int> &pows); //POI, Ref. flow, overlapping region
+  complex<double> RecursiveCorr(GFWCumulant *qpoi, GFWCumulant *qref, GFWCumulant *qol, int ptbin, vector<int> &hars); //POI, Ref. flow, overlapping region
   void AddRegion(Region inreg) { fRegions.push_back(inreg); };
   Region GetRegion(int index) { return fRegions.at(index); };
   int FindRegionByName(string refName);

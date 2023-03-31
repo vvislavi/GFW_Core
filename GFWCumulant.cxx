@@ -1,12 +1,12 @@
 /*
 Author: Vytautas Vislavicius
 Extention of Generic Flow (https://arxiv.org/abs/1312.3572 by A. Bilandzic et al.)
-A part of <AliGFW.cxx/h>
+A part of <GFW.cxx/h>
 A container to store Q vectors for one subevent with an extra layer to recursively calculate particle correlations.
 If used, modified, or distributed, please aknowledge the author of this code.
 */
-#include "AliGFWCumulant.h"
-AliGFWCumulant::AliGFWCumulant():
+#include "GFWCumulant.h"
+GFWCumulant::GFWCumulant():
   fQvector(0),
   fUsed(kBlank),
   fNEntries(-1),
@@ -18,10 +18,10 @@ AliGFWCumulant::AliGFWCumulant():
 {
 };
 
-AliGFWCumulant::~AliGFWCumulant()
+GFWCumulant::~GFWCumulant()
 {
 };
-void AliGFWCumulant::FillArray(int ptin, double phi, double weight, double SecondWeight) {
+void GFWCumulant::FillArray(int ptin, double phi, double weight, double SecondWeight) {
   if(!fInitialized)
     CreateComplexVectorArray(1,1,1);
   if(fPt==1) ptin=0; //If one bin, then just fill it straight; otherwise, if ptin is out-of-range, do not fill
@@ -44,7 +44,7 @@ void AliGFWCumulant::FillArray(int ptin, double phi, double weight, double Secon
   };
   Inc();
 };
-void AliGFWCumulant::ResetQs() {
+void GFWCumulant::ResetQs() {
   if(!fNEntries) return; //If 0 entries, then no need to reset. Otherwise, if -1, then just initialized and need to set to 0.
   for(int i=0; i<fPt; i++) {
     fFilledPts[i] = false;
@@ -56,7 +56,7 @@ void AliGFWCumulant::ResetQs() {
   };
   fNEntries=0;
 };
-void AliGFWCumulant::DestroyComplexVectorArray() {
+void GFWCumulant::DestroyComplexVectorArray() {
   if(!fInitialized) return;
   for(int l_n = 0; l_n<fN; l_n++) {
     for(int i=0;i<fPt;i++) {
@@ -72,13 +72,13 @@ void AliGFWCumulant::DestroyComplexVectorArray() {
   fNEntries=-1;
 };
 
-void AliGFWCumulant::CreateComplexVectorArray(int N, int Pow, int Pt) {
+void GFWCumulant::CreateComplexVectorArray(int N, int Pow, int Pt) {
   DestroyComplexVectorArray();
   vector<int> pwv;
   for(int i=0;i<N;i++) pwv.push_back(Pow);
   CreateComplexVectorArrayVarPower(N,pwv,Pt);
 };
-void AliGFWCumulant::CreateComplexVectorArrayVarPower(int N, vector<int> PowVec, int Pt) {
+void GFWCumulant::CreateComplexVectorArrayVarPower(int N, vector<int> PowVec, int Pt) {
   DestroyComplexVectorArray();
   fN=N;
   fPow=0;
@@ -97,13 +97,13 @@ void AliGFWCumulant::CreateComplexVectorArrayVarPower(int N, vector<int> PowVec,
   ResetQs();
   fInitialized=true;
 };
-complex<double> AliGFWCumulant::Vec(int n, int p, int ptbin) {
+complex<double> GFWCumulant::Vec(int n, int p, int ptbin) {
   if(!fInitialized) return 0;
   if(ptbin>=fPt || ptbin<0) ptbin=0;
   if(n>=0) return fQvector[ptbin][n][p];
   return conj(fQvector[ptbin][-n][p]);
 };
-bool AliGFWCumulant::IsPtBinFilled(int ptb) {
+bool GFWCumulant::IsPtBinFilled(int ptb) {
    if(!fFilledPts) return false;
    if(ptb>0) {
      if(fPt==1) ptb=0;

@@ -6,18 +6,18 @@ Latest version includes the calculation of any number of gaps and any combinatio
 If used, modified, or distributed, please aknowledge the author of this code.
 */
 
-#include "AliGFW.h"
-AliGFW::AliGFW():
+#include "GFW.h"
+GFW::GFW():
   fInitialized(false)
 {
 };
 
-AliGFW::~AliGFW() {
+GFW::~GFW() {
   for(auto pItr = fCumulants.begin(); pItr != fCumulants.end(); ++pItr)
     pItr->DestroyComplexVectorArray();
 };
 
-void AliGFW::AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double lEtaMax, int lNpT, int BitMask) {
+void GFW::AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double lEtaMax, int lNpT, int BitMask) {
   if(lNpT < 1) {
     printf("Number of pT bins cannot be less than 1! Not adding anything.\n");
     return;
@@ -41,7 +41,7 @@ void AliGFW::AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, dou
   lOneRegion.BitMask = BitMask; //Bit mask
   AddRegion(lOneRegion);
 };
-void AliGFW::AddRegion(string refName, int lNhar, int *lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask) {
+void GFW::AddRegion(string refName, int lNhar, int *lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask) {
   if(lNpT < 1) {
     printf("Number of pT bins cannot be less than 1! Not adding anything.\n");
     return;
@@ -66,14 +66,14 @@ void AliGFW::AddRegion(string refName, int lNhar, int *lNparVec, double lEtaMin,
   lOneRegion.BitMask = BitMask; //Bit mask
   AddRegion(lOneRegion);
 };
-int AliGFW::CreateRegions() {
+int GFW::CreateRegions() {
   if(fRegions.size()<1) {
     printf("No regions set. Skipping...\n");
     return 0;
   };
   int nRegions=0;
   for(auto pItr=fRegions.begin(); pItr!=fRegions.end(); pItr++) {
-    AliGFWCumulant *lCumulant = new AliGFWCumulant();
+    GFWCumulant *lCumulant = new GFWCumulant();
     if(pItr->NparVec.size()) {
       lCumulant->CreateComplexVectorArrayVarPower(pItr->Nhar, pItr->NparVec, pItr->NpT);
     } else {
@@ -85,7 +85,7 @@ int AliGFW::CreateRegions() {
   if(nRegions) fInitialized=true;
   return nRegions;
 };
-void AliGFW::Fill(double eta, int ptin, double phi, double weight, int mask, double SecondWeight) {
+void GFW::Fill(double eta, int ptin, double phi, double weight, int mask, double SecondWeight) {
   if(!fInitialized) CreateRegions();
   if(!fInitialized) return;
   for(int i=0;i<(int)fRegions.size();++i) {
@@ -93,21 +93,21 @@ void AliGFW::Fill(double eta, int ptin, double phi, double weight, int mask, dou
       fCumulants.at(i).FillArray(ptin,phi,weight,SecondWeight);
   };
 };
-complex<double> AliGFW::TwoRec(int n1, int n2, int p1, int p2, int ptbin, AliGFWCumulant *r1, AliGFWCumulant *r2, AliGFWCumulant *r3) {
+complex<double> GFW::TwoRec(int n1, int n2, int p1, int p2, int ptbin, GFWCumulant *r1, GFWCumulant *r2, GFWCumulant *r3) {
   complex<double> part1 = r1->Vec(n1,p1,ptbin);
   complex<double> part2 = r2->Vec(n2,p2,ptbin);
   complex<double> part3 = r3?r3->Vec(n1+n2,p1+p2,ptbin):complex<double>(0.,0.);
   complex<double> formula = part1*part2-part3;
   return formula;
 };
-complex<double> AliGFW::RecursiveCorr(AliGFWCumulant *qpoi, AliGFWCumulant *qref, AliGFWCumulant *qol, int ptbin, vector<int> &hars) {
+complex<double> GFW::RecursiveCorr(GFWCumulant *qpoi, GFWCumulant *qref, GFWCumulant *qol, int ptbin, vector<int> &hars) {
   vector<int> pows;
   for(int i=0; i<(int)hars.size(); i++)
     pows.push_back(1);
   return RecursiveCorr(qpoi, qref, qol, ptbin, hars, pows);
 };
 
-complex<double> AliGFW::RecursiveCorr(AliGFWCumulant *qpoi, AliGFWCumulant *qref, AliGFWCumulant *qol, int ptbin, vector<int> &hars, vector<int> &pows) {
+complex<double> GFW::RecursiveCorr(GFWCumulant *qpoi, GFWCumulant *qref, GFWCumulant *qol, int ptbin, vector<int> &hars, vector<int> &pows) {
   if((pows.at(0)!=1) && qol) qpoi=qol; //if the power of POI is not unity, then always use overlap (if defined).
   //Only valid for 1 particle of interest though!
   if(hars.size()<2) return qpoi->Vec(hars.at(0),pows.at(0),ptbin);
@@ -145,10 +145,10 @@ complex<double> AliGFW::RecursiveCorr(AliGFWCumulant *qpoi, AliGFWCumulant *qref
   pows.push_back(powlast);
   return formula;
 };
-void AliGFW::Clear() {
+void GFW::Clear() {
   for(auto ptr = fCumulants.begin(); ptr!=fCumulants.end(); ++ptr) ptr->ResetQs();
 };
-AliGFW::CorrConfig AliGFW::GetCorrelatorConfig(string config, string head, bool ptdif) {
+GFW::CorrConfig GFW::GetCorrelatorConfig(string config, string head, bool ptdif) {
   //First remove all ; and ,:
   s_replace_all(config,","," ");
   s_replace_all(config,";"," ");
@@ -221,18 +221,18 @@ AliGFW::CorrConfig AliGFW::GetCorrelatorConfig(string config, string head, bool 
   return ReturnConfig;
 };
 
-complex<double> AliGFW::Calculate(int poi, int ref, vector<int> hars, int ptbin) {
-  AliGFWCumulant *qref = &fCumulants.at(ref);
-  AliGFWCumulant *qpoi = &fCumulants.at(poi);
-  AliGFWCumulant *qovl = qpoi;
+complex<double> GFW::Calculate(int poi, int ref, vector<int> hars, int ptbin) {
+  GFWCumulant *qref = &fCumulants.at(ref);
+  GFWCumulant *qpoi = &fCumulants.at(poi);
+  GFWCumulant *qovl = qpoi;
   return RecursiveCorr(qpoi, qref, qovl, ptbin, hars);
 };
-// complex<double> AliGFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero, bool DisableOverlap) {
+// complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero, bool DisableOverlap) {
 //    vector<int> ptbins;
 //    for(int i=0;i<(int)corconf.size();i++) ptbins.push_back(ptbin);
 //    return Calculate(corconf,ptbins,SetHarmsToZero,DisableOverlap);
 // }
-complex<double> AliGFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero, bool DisableOverlap) {
+complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero, bool DisableOverlap) {
   if(corconf.Regs.size()==0) return complex<double>(0,0); //Check if we have any regions at all
   // if(ptbins.size()!=corconf.Regs.size()) {printf("Number of pT-bins is not the same as number of subevents!\n"); return complex<double>(0,0); };
   complex<double> retval(1,0);
@@ -247,11 +247,11 @@ complex<double> AliGFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsTo
     int ref = (corconf.Regs.at(i).size()>1)?corconf.Regs.at(i).at(1):corconf.Regs.at(i).at(0);
     int ovl = corconf.Overlap.at(i);
     //and regions themselves
-    AliGFWCumulant *qref = &fCumulants.at(ref);
-    AliGFWCumulant *qpoi = &fCumulants.at(poi);
+    GFWCumulant *qref = &fCumulants.at(ref);
+    GFWCumulant *qpoi = &fCumulants.at(poi);
     if(!qref->IsPtBinFilled(ptInd)) return complex<double>(0,0); //if REF is not filled, don't even continue. Could be redundant, but should save little CPU time
     if(!qpoi->IsPtBinFilled(ptInd)) return complex<double>(0,0);//if POI is not filled, don't even continue. Could be redundant, but should save little CPU time
-    AliGFWCumulant *qovl=0;
+    GFWCumulant *qovl=0;
     //Check if in the ref. region we have enough particles (no. of particles in the region >= no of harmonics for subevent)
     int sz1 = corconf.Hars.at(i).size();
     if(poi!=ref) sz1--;
@@ -266,31 +266,31 @@ complex<double> AliGFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsTo
   return retval;
 };
 
-complex<double> AliGFW::Calculate(int poi, vector<int> hars) {
-  AliGFWCumulant *qpoi = &fCumulants.at(poi);
+complex<double> GFW::Calculate(int poi, vector<int> hars) {
+  GFWCumulant *qpoi = &fCumulants.at(poi);
   return RecursiveCorr(qpoi, qpoi, qpoi, 0, hars);
 };
-int AliGFW::FindRegionByName(string refName) {
+int GFW::FindRegionByName(string refName) {
   for(int i=0;i<(int)fRegions.size();i++) if(fRegions.at(i).rName == refName) return i;
   return -1;
 };
 //String processing:
-int AliGFW::s_index(string &instr, const string &pattern, const int &spos) {
+int GFW::s_index(string &instr, const string &pattern, const int &spos) {
   return instr.find(pattern,spos);
 };
-bool AliGFW::s_contains(string &instr, const string &pattern) {
+bool GFW::s_contains(string &instr, const string &pattern) {
   return (s_index(instr,pattern)>-1);
 };
-void AliGFW::s_replace(string &instr, const string &pattern1, const string &pattern2, const int &spos) {
+void GFW::s_replace(string &instr, const string &pattern1, const string &pattern2, const int &spos) {
   int lpos = s_index(instr,pattern1,spos);
   if(lpos<0) return;
   instr.replace(lpos,pattern1.size(),pattern2);
 };
-void AliGFW::s_replace_all(string &instr, const string &pattern1, const string &pattern2) {
+void GFW::s_replace_all(string &instr, const string &pattern1, const string &pattern2) {
   int lpos=s_index(instr,pattern1);
   while(lpos>-1) { s_replace(instr,pattern1,pattern2,lpos); lpos=s_index(instr,pattern1,lpos); };
 };
-bool AliGFW::s_tokenize(string &instr, string &subs, int &spos, const string &delim) {
+bool GFW::s_tokenize(string &instr, string &subs, int &spos, const string &delim) {
   if(spos<0 || spos>=(int)instr.size()) {spos=-1; subs=""; return false;};
   int lpos = s_index(instr,delim,spos);
   if(lpos<0) lpos=instr.size();

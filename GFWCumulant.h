@@ -1,7 +1,7 @@
 /*
 Author: Vytautas Vislavicius
 Extention of Generic Flow (https://arxiv.org/abs/1312.3572 by A. Bilandzic et al.)
-A part of <AliGFW.cxx/h>
+A part of <GFW.cxx/h>
 A container to store Q vectors for one subevent with an extra layer to recursively calculate particle correlations.
 If used, modified, or distributed, please aknowledge the author of this code.
 */
@@ -12,10 +12,10 @@ If used, modified, or distributed, please aknowledge the author of this code.
 #include <vector>
 using std::vector;
 using std::complex;
-class AliGFWCumulant {
+class GFWCumulant {
  public:
-  AliGFWCumulant();
-  ~AliGFWCumulant();
+  GFWCumulant();
+  ~GFWCumulant();
   void ResetQs();
   void FillArray(int ptin, double phi, double weight=1, double SecondWeight=-1);
   enum UsedFlags_t {kBlank = 0, kFull=1, kPt=2};
