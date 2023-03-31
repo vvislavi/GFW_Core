@@ -19,7 +19,7 @@ class GFW {
  public:
   struct Region {
     int Nhar, Npar, NpT;
-    vector<int> NparVec;
+    vector<int> NparVec{};
     double EtaMin=-999;
     double EtaMax=-999;
     int BitMask=1;
@@ -30,8 +30,8 @@ class GFW {
     void PrintStructure() {printf("%s: eta [%f.. %f].",rName.c_str(),EtaMin,EtaMax); };
   };
   struct CorrConfig {
-    vector<vector<int>> Regs {};
-    vector<vector<int>> Hars {};
+    vector<vector<int> > Regs{};
+    vector<vector<int> > Hars{};
     vector<int> Overlap;
     vector<int> ptInd;
     bool pTDif=false;

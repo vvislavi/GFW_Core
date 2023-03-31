@@ -33,7 +33,7 @@ void GFW::AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double
   Region lOneRegion;
   lOneRegion.Nhar = lNhar; //Number of harmonics
   lOneRegion.Npar = lNpar; //Number of powers
-  lOneRegion.NparVec = vector<int> {}; //if powers defined, then set this to empty vector
+  lOneRegion.NparVec = vector<int>{}; //if powers defined, then set this to empty vector
   lOneRegion.EtaMin = lEtaMin; //Min. eta
   lOneRegion.EtaMax = lEtaMax; //Max. eta
   lOneRegion.NpT = lNpT; //Number of pT bins
@@ -57,7 +57,7 @@ void GFW::AddRegion(string refName, int lNhar, int *lNparVec, double lEtaMin, do
   Region lOneRegion;
   lOneRegion.Nhar = lNhar; //Number of harmonics
   lOneRegion.Npar = 0; //If vector with powers defined, set this to zero
-  lOneRegion.NparVec = vector<int> {};//lNparVec; //vector with powers for each harmonic
+  lOneRegion.NparVec = vector<int>{};//lNparVec; //vector with powers for each harmonic
   for(int i=0;i<lNhar;i++) lOneRegion.NparVec.push_back(lNparVec[i]);
   lOneRegion.EtaMin = lEtaMin; //Min. eta
   lOneRegion.EtaMax = lEtaMax; //Max. eta
@@ -172,9 +172,8 @@ GFW::CorrConfig GFW::GetCorrelatorConfig(string config, string head, bool ptdif)
   int counter=0;
   while(s_tokenize(config,ts,szend,"{")) {
     counter++;
-    ReturnConfig.Regs.push_back(vector<int> {});
-    ReturnConfig.Hars.push_back(vector<int> {});
-    // ReturnConfig.ptInd.push_back(vector<int> {});
+    ReturnConfig.Regs.push_back(vector<int>{});
+    ReturnConfig.Hars.push_back(vector<int>{});
     ReturnConfig.Overlap.push_back(-1); //initially, assume no overlap
     //Check if there's a particular pT bin I should be using here. If so, store it (otherwise, it's bin 0)
     int ptbin=-1;

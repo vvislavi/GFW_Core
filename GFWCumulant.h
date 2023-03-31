@@ -39,7 +39,7 @@ class GFWCumulant {
   int fPt; //!fPt bins
   bool *fFilledPts;
   bool fInitialized; //Arrays are initialized
-  complex<double> fNullQ = complex<double>(0.,0.);
+  complex<double> fNullQ = 0;
 };
 
 #endif
