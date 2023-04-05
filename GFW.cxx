@@ -76,7 +76,7 @@ int GFW::CreateRegions() {
   return nRegions;
 };
 void GFW::Fill(double eta, int ptin, double phi, double weight, int mask, double SecondWeight) {
-  if(!fInitialized) { CreateRegions(); if(!fInitialized) return; }; //First check if initialised, if not -- initialize, and if it fails, return
+  // if(!fInitialized) return;
   for(int i=0;i<(int)fRegions.size();++i) {
     if(fRegions.at(i).EtaMin<eta && fRegions.at(i).EtaMax>eta && (fRegions.at(i).BitMask&mask))
       fCumulants.at(i).FillArray(ptin,phi,weight,SecondWeight);
@@ -130,6 +130,7 @@ complex<double> GFW::RecursiveCorr(GFWCumulant *qpoi, GFWCumulant *qref, GFWCumu
   return formula;
 };
 void GFW::Clear() {
+  if(!fInitialized) CreateRegions();
   for(auto ptr = fCumulants.begin(); ptr!=fCumulants.end(); ++ptr) ptr->ResetQs();
 };
 GFW::CorrConfig GFW::GetCorrelatorConfig(string config, string head, bool ptdif) {
@@ -212,7 +213,7 @@ complex<double> GFW::Calculate(int poi, int ref, vector<int> hars, int ptbin) {
   return RecursiveCorr(qpoi, qref, qovl, ptbin, hars);
 };
 complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero) {
-  if(!fInitialized) { CreateRegions(); if(!fInitialized) return complex<double>(0,0); }; //First check if initialised, if not -- initialize, and if it fails, return
+  // if(!fInitialized) return complex<double>(0,0); //First check if initialised, if not -- initialize, and if it fails, return
   if(corconf.Regs.size()==0) return complex<double>(0,0); //Check if we have any regions at all
   complex<double> retval(1,0);
   int ptInd;
