@@ -41,14 +41,15 @@ class GFW {
   ~GFW();
   vector<Region> fRegions;
   vector<GFWCumulant> fCumulants;
-  void AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double lEtaMax, int lNpT=1, int BitMask=1);
-  void AddRegion(string refName, int lNhar, int *lNparVec, double lEtaMin, double lEtaMax, int lNpT=1, int BitMask=1);
+  void AddRegion(string refName, vector<int> lNparVec, double lEtaMin, double lEtaMax, int lNpT=1, int BitMask=1);
+  void AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double lEtaMax, int lNpT=1, int BitMask=1); //Legacy support, all powers are the same
+  void AddRegion(string refName, int lNhar, int *lNparVec, double lEtaMin, double lEtaMax, int lNpT=1, int BitMask=1); //Legacy support, array instead of a vector
   int CreateRegions();
   void Fill(double eta, int ptin, double phi, double weight, int mask, double secondWeight=-1);
   void Clear();
   GFWCumulant GetCumulant(int index) { return fCumulants.at(index); };
   CorrConfig GetCorrelatorConfig(string config, string head = "", bool ptdif=false);
-  complex<double> Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero, bool DisableOverlap=false);
+  complex<double> Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero);
 public:
   bool fInitialized;
   complex<double> TwoRec(int n1, int n2, int p1, int p2, int ptbin, GFWCumulant*, GFWCumulant*, GFWCumulant*);

@@ -16,8 +16,7 @@ GFW::~GFW() {
   for(auto pItr = fCumulants.begin(); pItr != fCumulants.end(); ++pItr)
     pItr->DestroyComplexVectorArray();
 };
-
-void GFW::AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double lEtaMax, int lNpT, int BitMask) {
+void GFW::AddRegion(string refName, vector<int> lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask) {
   if(lNpT < 1) {
     printf("Number of pT bins cannot be less than 1! Not adding anything.\n");
     return;
@@ -31,9 +30,9 @@ void GFW::AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double
     return;
   };
   Region lOneRegion;
-  lOneRegion.Nhar = lNhar; //Number of harmonics
-  lOneRegion.Npar = lNpar; //Number of powers
-  lOneRegion.NparVec = vector<int>{}; //if powers defined, then set this to empty vector
+  lOneRegion.Nhar = (int)lNparVec.size(); //Number of harmonics
+  lOneRegion.Npar = 0; //If vector with powers defined, set this to zero
+  lOneRegion.NparVec = lNparVec;//copy the whole vector
   lOneRegion.EtaMin = lEtaMin; //Min. eta
   lOneRegion.EtaMax = lEtaMax; //Max. eta
   lOneRegion.NpT = lNpT; //Number of pT bins
@@ -41,30 +40,15 @@ void GFW::AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double
   lOneRegion.BitMask = BitMask; //Bit mask
   AddRegion(lOneRegion);
 };
+void GFW::AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double lEtaMax, int lNpT, int BitMask) {
+  vector<int> tVec={};
+  for(int i=0;i<lNhar;i++) tVec.push_back(lNpar);
+  AddRegion(refName,tVec,lEtaMin,lEtaMax,lNpT,BitMask);
+};
 void GFW::AddRegion(string refName, int lNhar, int *lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask) {
-  if(lNpT < 1) {
-    printf("Number of pT bins cannot be less than 1! Not adding anything.\n");
-    return;
-  };
-  if(lEtaMin >= lEtaMax) {
-    printf("Eta min. cannot be more than eta max! Not adding...\n");
-    return;
-  };
-  if(refName=="") {
-    printf("Region must have a name!\n");
-    return;
-  };
-  Region lOneRegion;
-  lOneRegion.Nhar = lNhar; //Number of harmonics
-  lOneRegion.Npar = 0; //If vector with powers defined, set this to zero
-  lOneRegion.NparVec = vector<int>{};//lNparVec; //vector with powers for each harmonic
-  for(int i=0;i<lNhar;i++) lOneRegion.NparVec.push_back(lNparVec[i]);
-  lOneRegion.EtaMin = lEtaMin; //Min. eta
-  lOneRegion.EtaMax = lEtaMax; //Max. eta
-  lOneRegion.NpT = lNpT; //Number of pT bins
-  lOneRegion.rName = refName; //Name of the region
-  lOneRegion.BitMask = BitMask; //Bit mask
-  AddRegion(lOneRegion);
+  vector<int> tVec={};
+  for(int i=0;i<lNhar;i++) tVec.push_back(lNparVec[i]);
+  AddRegion(refName,tVec,lEtaMin,lEtaMax,lNpT,BitMask);
 };
 int GFW::CreateRegions() {
   if(fRegions.size()<1) {
@@ -74,11 +58,7 @@ int GFW::CreateRegions() {
   int nRegions=0;
   for(auto pItr=fRegions.begin(); pItr!=fRegions.end(); pItr++) {
     GFWCumulant *lCumulant = new GFWCumulant();
-    if(pItr->NparVec.size()) {
-      lCumulant->CreateComplexVectorArrayVarPower(pItr->Nhar, pItr->NparVec, pItr->NpT);
-    } else {
-      lCumulant->CreateComplexVectorArray(pItr->Nhar, pItr->Npar, pItr->NpT);
-    };
+    lCumulant->CreateComplexVectorArrayVarPower(pItr->Nhar, pItr->NparVec, pItr->NpT);
     fCumulants.push_back(*lCumulant);
     ++nRegions;
   };
@@ -130,16 +110,11 @@ complex<double> GFW::RecursiveCorr(GFWCumulant *qpoi, GFWCumulant *qref, GFWCumu
     }
     hars.at(i)+=harlast;
     pows.at(i)+=powlast;
-    //The issue is here. In principle, if i=0 (dif), then the overlap is only qpoi (0, if no overlap);
-    //Otherwise, if we are not working with the 1st entry (dif.), then overlap will always be from qref
-    //One should thus (probably) make a check if i=0, then qovl=qpoi, otherwise qovl=qref. But need to think more
-    //-- This is not aplicable anymore, since the overlap is explicitly specified
     complex<double> subtractVal = RecursiveCorr(qpoi, qref, qol, ptbin, hars, pows);
     if(lDegeneracy>1) { subtractVal *= lDegeneracy; lDegeneracy=1; };
     formula-=subtractVal;
     hars.at(i)-=harlast;
     pows.at(i)-=powlast;
-
   };
   hars.push_back(harlast);
   pows.push_back(powlast);
@@ -226,21 +201,14 @@ complex<double> GFW::Calculate(int poi, int ref, vector<int> hars, int ptbin) {
   GFWCumulant *qovl = qpoi;
   return RecursiveCorr(qpoi, qref, qovl, ptbin, hars);
 };
-// complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero, bool DisableOverlap) {
-//    vector<int> ptbins;
-//    for(int i=0;i<(int)corconf.size();i++) ptbins.push_back(ptbin);
-//    return Calculate(corconf,ptbins,SetHarmsToZero,DisableOverlap);
-// }
-complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero, bool DisableOverlap) {
+complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero) {
   if(corconf.Regs.size()==0) return complex<double>(0,0); //Check if we have any regions at all
-  // if(ptbins.size()!=corconf.Regs.size()) {printf("Number of pT-bins is not the same as number of subevents!\n"); return complex<double>(0,0); };
   complex<double> retval(1,0);
   int ptInd;
   for(int i=0;i<(int)corconf.Regs.size();i++) { //looping over all regions
     if(corconf.Regs.at(i).size()==0)  return complex<double>(0,0); //again, if no regions in the current subevent, then quit immediatelly
     ptInd = corconf.ptInd.at(i); //for i=0 (potentially, POI)
     if(ptInd<0) ptInd = ptbin;
-    // int ptbin = ptbins.at(i);
     //picking up the indecies of regions...
     int poi = corconf.Regs.at(i).at(0);
     int ref = (corconf.Regs.at(i).size()>1)?corconf.Regs.at(i).at(1):corconf.Regs.at(i).at(0);
@@ -257,7 +225,7 @@ complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZer
     if(qref->GetN() < sz1) return complex<double>(0,0);
     //Then, figure the overlap
     if(ovl > -1) //if overlap is defined, then (unless it's explicitly disabled)
-      qovl = DisableOverlap?0:&fCumulants.at(ovl);
+      qovl = &fCumulants.at(ovl);
     else if(ref==poi) qovl = qref; //If ref and poi are the same, then the same is for overlap. Only, when OL not explicitly defined
     if(SetHarmsToZero) for(int j=0;j<(int)corconf.Hars.at(i).size();j++) corconf.Hars.at(i).at(j) = 0;
     retval *= RecursiveCorr(qpoi, qref, qovl, ptInd, corconf.Hars.at(i));
