@@ -38,39 +38,36 @@ int main() {
   auto lEvents = ReadAngles("PhiAngles.dat");
   //Create GFW object
   GFW *fGFW = new GFW();
-  //Initialize regions. Each region has identifier ("pos", "neg", whatever), power array (see header file and documentation), eta range, and bit mask. Essentially, three different ways of initializing regions:
-  //Note! The powers were calculated for a generic example, considering harmonics {2, 2, -2, -2} and {3, 3, -3, -3}. We won't calculate all of them here!
-  //First: powers are provided as a vector<int>:
+  //Initialize regions. Each region has identifier ("pos", "neg", "whatever"), eta range, number of pT bins (>0), and bit mask (>0). The preferred way to do this is:
+  fGFW->AddRegion("FullReg",-1.0,1.0,1,1);
+  //Here the dimensions of Q-vector are calculated automatically based on the configurations that are fetched when calling GetCorrelatorConfig. Other methods are left as legacy:
+  //Legacy no. 1: powers are provided as a vector<int>. For their calculation, see GFWPowersArray.
   vector<int> PowersAsVector = {5, 0, 4, 4, 3, 0, 3};
   fGFW->AddRegion("FullReg",PowersAsVector,-1,1,1,1);
-  //Second: powers as array. Similar to previous case, but now also need to specify number of entries
+  //Legacy no. 2: powers as array. Similar to previous case, but now also need to specify number of entries
   int PowersAsArray[] = {3, 0, 2, 2, 3, 0, 3};
   int nPowersAsArray=7;
   fGFW->AddRegion("PosSide",nPowersAsArray,PowersAsArray,0,1,1,1);
-  //Third: not CPU-efficient, b/c many unused Qs will be calculated
+  //Lgeacy no. 3: least CPU-efficient, b/c many unused Qs will be calculated. Maximum power for each harmonic considered
   int PowersAsInt=3; //Maximum power is 3
   int nPowersAsInt=7; //Maximum harmonic is 6 (-> 3+3)
   fGFW->AddRegion("NegSide",nPowersAsInt,PowersAsInt,-1,0,1,1);
   //Let us also define a separate region of POI's, let's say, pT-differential and for specific spiecies
-  vector<int> POIPowers = {2,0,2,2,2}; //The powers for a single-particle will _always_ be either 0 or 1 (=2 powers overall), where relevant. So if we want to calculate eg v2 and v3, we have:
-  // Har 0: 0 or 1 -> 2 powers (I think?)
-  // Har 1: will not be used -> 0 powers
-  // Har 2: 0 or 1 -> 2 powers
-  // Har 3: 0 or 1 -> 2 powers
   int nPtBins=3; //Let's assume 3 different pT bins
-  int BitMask=2; //Different bit mask. This is so that we can first identify the particle and then can decide whether to fill the relevant array or not
-  fGFW->AddRegion("PIDNeg",POIPowers,-1,0,nPtBins,BitMask);
-  //After all the regions have been added, create them:
-  fGFW->CreateRegions();
-  //Next, define what we want to calculate. This is done in terms of correlator configurations that are defined as "[POI_R1] REF_R1 [ | Overlap_R1 ] {Harmonics_R1} [ [POI_R2] REF_R2 [ | Overlap_R2] {Harmonics_R2} ]", where terms in [] brackets are optional. Eg if we want to calculate <2, 2, -2, -2> for single event and 2-subevets (Positive side -- Negative side), the configurations will look as following:
+  int BitMask=2; //Different bit mask. This is so that we can first identify the particle and then can decide whether to fill the relevant vector or not
+  fGFW->AddRegion("PIDNeg",-1,0,nPtBins,BitMask);
+  //Next, define what we want to calculate. This is done in terms of correlator configurations that are defined as "[POI_R1] REF_R1 [ | Overlap_R1 ] {Harmonics_R1} [ [POI_R2] REF_R2 [ | Overlap_R2] {Harmonics_R2} ]", where terms in [] brackets are optional, see README for more info. If we want to calculate <2, 2, -2, -2> for single event and 2-subevets (Positive side -- Negative side), the configurations will look as following:
   CorrConfigs configs{}; //First make a vector where we store all the configs
   configs.push_back(fGFW->GetCorrelatorConfig("FullReg {2 2 -2 -2}","FR2222",false)); //For har=2, 4PC, full event
   configs.push_back(fGFW->GetCorrelatorConfig("NegSide {2 2} PosSide {-2 -2}","SE2222",false)); //For har=2, 4PC, 2 subevent
-  //In general, if no overlap and no POI are specified, then the reference region will be used to calculate the overlap (when phi1=phi2). However, if only one particle is taken from a regions ("PosSide {2}"), then there are no auto-correlations and no overlap is considered.
+  //In general, if no overlap and no POI are specified, then the reference region will be used to calculate the overlap (when phi1=phi2). However, if only one particle is taken from a regions ("PosSide {2}"), then there are no auto-correlations and thus no overlap
   //Next, let's make a configuration for PID particle which is also pT differential:
   configs.push_back(fGFW->GetCorrelatorConfig("PIDNeg NegSide | PIDNeg {2 2} PosSide {-2 -2}","PID2222",true));
-  //In this case, on the right-hand side we have "PIDNeg NegSide | PIDNeg {H1 H2}". The first two terms indicate that first harmonic H1 is taken from PIDNeg region and the second one from NegSide. There might be some overlap between PIDNeg and NegSide, which in our case is exactly PIDNeg, and this is specified via a | symbol. The last argument kTRUE indicates that the configuration is pt-dependent, which will be storred in the configurator and later be used to decide whether we want to loop over pt bins or not.
-  //Then let's define some storage container to keep track of event-by-event values. Normally one would use something like TProfile or sth.
+  //In this case, on the left-hand side we have "PIDNeg NegSide | PIDNeg {H1 H2}". The first two terms indicate that first harmonic H1 is taken from PIDNeg region and the second one from NegSide. There might be some overlap between PIDNeg and NegSide, which in our case is exactly PIDNeg, and this is specified via a | symbol. The last argument "true" indicates that the configuration is pt-dependent, which will be storred in the configurator and later be used to decide whether we want to loop over pt bins or not.
+  //After GFW is configured, let's initialize it. In principle there are multiple checks to make sure that it's initialised runtime, but it's also healthy practice to do it ourselves (in which case, the bool checks can be removed from Fill() and Calculate() methods to save a little bit of time)
+  //IMPORTANT! If one uses the preferred AddRegion method (line 43), CreateRegions MUST be called after all the GetCorrelatorConfigs() calls. This is because GFW _needs_ to know which sets of harmonics will be considered.
+  fGFW->CreateRegions();
+  //Then let's define some storage container to keep track of event-by-event values. Normally one would use something like TProfile or sth, but here we just keep a simple vector of pairs (value and normalization)
   vector<pair<long double, long double> > storage = {make_pair(0,0),make_pair(0,0),make_pair(0,0),make_pair(0,0),make_pair(0,0)};
   //Finally, start calculations:
   for(auto PhiAngles:lEvents) { //Event loop
@@ -85,7 +82,7 @@ int main() {
         double weight=1; //Some weight that could/would come from eg NUA/NUE
         fGFW->Fill(eta,ptInd,phi,weight,BitMask);
       }
-      //Now that GFW has been filled, calculate the correlations defined in lines 65, 66, and 69:
+      //Now that GFW has been filled, calculate the correlations defined in lines 61, 62, and 65:
       //First let's calculate FR2222:
       pair<double, double> fr22 = CalculateSingleConfig(fGFW,configs[0],0);
       storage[0].first += fr22.first*fr22.second; storage[0].second+=fr22.second;

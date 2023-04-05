@@ -16,7 +16,7 @@ GFW::~GFW() {
   for(auto pItr = fCumulants.begin(); pItr != fCumulants.end(); ++pItr)
     pItr->DestroyComplexVectorArray();
 };
-void GFW::AddRegion(string refName, vector<int> lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask) {
+void GFW::AddRegion(string refName, double lEtaMin, double lEtaMax, int lNpT, int BitMask) {
   if(lNpT < 1) {
     printf("Number of pT bins cannot be less than 1! Not adding anything.\n");
     return;
@@ -30,15 +30,21 @@ void GFW::AddRegion(string refName, vector<int> lNparVec, double lEtaMin, double
     return;
   };
   Region lOneRegion;
-  lOneRegion.Nhar = (int)lNparVec.size(); //Number of harmonics
-  lOneRegion.Npar = 0; //If vector with powers defined, set this to zero
-  lOneRegion.NparVec = lNparVec;//copy the whole vector
+  lOneRegion.Nhar = 0; //Empty for now
+  lOneRegion.powsDefined = false; //If vector with powers defined, set this to zero
+  lOneRegion.NparVec = {};//Empty for now
   lOneRegion.EtaMin = lEtaMin; //Min. eta
   lOneRegion.EtaMax = lEtaMax; //Max. eta
   lOneRegion.NpT = lNpT; //Number of pT bins
   lOneRegion.rName = refName; //Name of the region
   lOneRegion.BitMask = BitMask; //Bit mask
   AddRegion(lOneRegion);
+};
+void GFW::AddRegion(string refName, vector<int> lNparVec, double lEtaMin, double lEtaMax, int lNpT, int BitMask) {
+  AddRegion(refName,lEtaMin,lEtaMax,lNpT,BitMask);
+  (fRegions.end()-1)->Nhar = (int)lNparVec.size();
+  (fRegions.end()-1)->NparVec = lNparVec;
+  (fRegions.end()-1)->powsDefined = true;
 };
 void GFW::AddRegion(string refName, int lNhar, int lNpar, double lEtaMin, double lEtaMax, int lNpT, int BitMask) {
   vector<int> tVec={};
@@ -51,6 +57,10 @@ void GFW::AddRegion(string refName, int lNhar, int *lNparVec, double lEtaMin, do
   AddRegion(refName,tVec,lEtaMin,lEtaMax,lNpT,BitMask);
 };
 int GFW::CreateRegions() {
+  for(auto pItr = fCumulants.begin(); pItr != fCumulants.end(); ++pItr)
+    pItr->DestroyComplexVectorArray();
+  fCumulants.clear();
+  InitializePowerArrays();
   if(fRegions.size()<1) {
     printf("No regions set. Skipping...\n");
     return 0;
@@ -66,8 +76,7 @@ int GFW::CreateRegions() {
   return nRegions;
 };
 void GFW::Fill(double eta, int ptin, double phi, double weight, int mask, double SecondWeight) {
-  if(!fInitialized) CreateRegions();
-  if(!fInitialized) return;
+  if(!fInitialized) { CreateRegions(); if(!fInitialized) return; }; //First check if initialised, if not -- initialize, and if it fails, return
   for(int i=0;i<(int)fRegions.size();++i) {
     if(fRegions.at(i).EtaMin<eta && fRegions.at(i).EtaMax>eta && (fRegions.at(i).BitMask&mask))
       fCumulants.at(i).FillArray(ptin,phi,weight,SecondWeight);
@@ -192,6 +201,7 @@ GFW::CorrConfig GFW::GetCorrelatorConfig(string config, string head, bool ptdif)
   ReturnConfig.Head = head;
   ReturnConfig.pTDif = ptdif;
   // ReturnConfig.pTbin = ptbin;
+  fListOfCFGs.push_back(ReturnConfig);
   return ReturnConfig;
 };
 
@@ -202,6 +212,7 @@ complex<double> GFW::Calculate(int poi, int ref, vector<int> hars, int ptbin) {
   return RecursiveCorr(qpoi, qref, qovl, ptbin, hars);
 };
 complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZero) {
+  if(!fInitialized) { CreateRegions(); if(!fInitialized) return complex<double>(0,0); }; //First check if initialised, if not -- initialize, and if it fails, return
   if(corconf.Regs.size()==0) return complex<double>(0,0); //Check if we have any regions at all
   complex<double> retval(1,0);
   int ptInd;
@@ -232,7 +243,32 @@ complex<double> GFW::Calculate(CorrConfig corconf, int ptbin, bool SetHarmsToZer
   }
   return retval;
 };
-
+vector<pair<int, vector<int> > > GFW::GetHarmonicsSingleConfig(const CorrConfig &incfg) {
+  vector<pair<int, vector<int> > > retPair;
+  for(int iR=0; iR<(int)incfg.Regs.size(); iR++) {
+    if((int)incfg.Regs[iR].size()>1) {
+      retPair.push_back(make_pair(incfg.Regs[iR][0], vector<int>{incfg.Hars[iR][0]})); //If we have a PoI, then it comes with the first harmonic
+      retPair.push_back(make_pair(incfg.Regs[iR][1], incfg.Hars[iR])); //Then the second is ref. with full harmonics
+    } else retPair.push_back(make_pair(incfg.Regs[iR][0], incfg.Hars[iR])); //Otherwise, it's only ref with all harmonics
+    if(incfg.Overlap[iR]>-1) retPair.push_back(make_pair(incfg.Overlap[iR], incfg.Hars[iR])); //if overlap provided, then also fetch its harmonics
+  }
+  return retPair;
+};
+void GFW::InitializePowerArrays() {
+  vector<vector<vector<int> > > harSets((int)fRegions.size());
+  for(const CorrConfig &lConf:fListOfCFGs) {
+    auto HarPerReg = GetHarmonicsSingleConfig(lConf);
+    for(auto oneHar:HarPerReg) harSets[oneHar.first].push_back(oneHar.second);
+  };
+  //Now, loop through all combinations of different harmonics for each region and calculate power arrays
+  for(int i=0; i<(int)harSets.size();i++) {
+    if(fRegions[i].powsDefined) continue; //Only do if powers have not been externally defined
+    vector<int> powerArray = GetPowerArray(harSets[i]);
+    fRegions[i].Nhar = (int)powerArray.size();
+    fRegions[i].NparVec = powerArray;
+    fRegions[i].powsDefined=true;
+  }
+};
 complex<double> GFW::Calculate(int poi, vector<int> hars) {
   GFWCumulant *qpoi = &fCumulants.at(poi);
   return RecursiveCorr(qpoi, qpoi, qpoi, 0, hars);

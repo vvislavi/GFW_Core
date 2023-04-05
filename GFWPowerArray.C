@@ -1,9 +1,11 @@
-#ifndef MAXPOWERS__C
-#define MAXPOWERS__C
+#ifndef GFWPOWERARRAY__C
+#define GFWPOWERARRAY__C
 #include <vector>
 #include <cmath>
+#include <string>
 using namespace std;
 using std::vector;
+using std::string;
 typedef vector<int> HarSet;
 int getHighestHarmonic(const HarSet &inhar) {
   //Highest possible harmonic: sum of same-sign harmonics
@@ -21,7 +23,6 @@ HarSet AddConstant(HarSet hars, int offset) {
   for(int &val : retVec) val+=offset;
   return retVec;
 };
-
 void FlushVectorToMaster(HarSet &masterVector, HarSet &comVec, const int &MaxPower) {
   int nPartLoc = MaxPower-comVec.size()+1;
   for(auto &val: comVec) {
@@ -43,7 +44,7 @@ void PrintVector(const HarSet &singleSet) {
   for(int i=1;i<vcSize;i++) printf(", %i",singleSet[i]);
   printf("}\n");
 }
-HarSet MaxPower(vector<HarSet> inHarmonics) {
+HarSet GetPowerArray(vector<HarSet> inHarmonics) {
   //First, find maximum number of particle correlations ( = max power) and maximum (sum of) harmonics
   int MaxHar=0;
   int nMaxPart=0;
@@ -66,7 +67,7 @@ HarSet MaxPower(vector<HarSet> inHarmonics) {
   for(int &val:retVec) if(val!=0) val++;
   return retVec;
 };
-int main() {
+void PowerArrayTest() {
   vector<HarSet> AllHars = {
     HarSet{2},
     HarSet{3},
@@ -76,7 +77,7 @@ int main() {
   printf("Input harmonics are:\n");
   for(HarSet inSet:AllHars) PrintVector(inSet);
   printf("The configuration of powers must then be:\n");
-  auto vc = MaxPower(AllHars);
+  auto vc = GetPowerArray(AllHars);
   PrintVector(vc);
-}
+};
 #endif
