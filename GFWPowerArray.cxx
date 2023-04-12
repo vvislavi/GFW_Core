@@ -1,29 +1,21 @@
-#ifndef GFWPOWERARRAY__C
-#define GFWPOWERARRAY__C
-#include <vector>
-#include <cmath>
-#include <string>
-using namespace std;
-using std::vector;
-using std::string;
-typedef vector<int> HarSet;
-int getHighestHarmonic(const HarSet &inhar) {
+#include "GFWPowerArray.h"
+int GFWPowerArray::getHighestHarmonic(const HarSet &inhar) {
   //Highest possible harmonic: sum of same-sign harmonics
   int maxPos=0, maxNeg=0;
   for(int val:inhar) if(val>0) maxPos+=val; else maxNeg+=abs(val);
   return maxPos>maxNeg?maxPos:maxNeg;
 };
-HarSet TrimVec(HarSet hars, int ind) {
+HarSet GFWPowerArray::TrimVec(HarSet hars, int ind) {
   HarSet retVec = hars;
   retVec.erase(retVec.begin()+ind);
   return retVec;
 };
-HarSet AddConstant(HarSet hars, int offset) {
+HarSet GFWPowerArray::AddConstant(HarSet hars, int offset) {
   HarSet retVec = hars;
   for(int &val : retVec) val+=offset;
   return retVec;
 };
-void FlushVectorToMaster(HarSet &masterVector, HarSet &comVec, const int &MaxPower) {
+void GFWPowerArray::FlushVectorToMaster(HarSet &masterVector, HarSet &comVec, const int &MaxPower) {
   int nPartLoc = MaxPower-comVec.size()+1;
   for(auto &val: comVec) {
     int absVal = abs(val);
@@ -32,19 +24,19 @@ void FlushVectorToMaster(HarSet &masterVector, HarSet &comVec, const int &MaxPow
     };
   };
 };
-void RecursiveFunction(HarSet &masterVector, HarSet hars, int offset, const int &MaxPower) {
+void GFWPowerArray::RecursiveFunction(HarSet &masterVector, HarSet hars, int offset, const int &MaxPower) {
   HarSet compVec = AddConstant(hars,offset);
   FlushVectorToMaster(masterVector, compVec, MaxPower);
   for(int i=0;i<hars.size();i++) RecursiveFunction(masterVector,TrimVec(hars,i),offset+hars.at(i),MaxPower);;
 };
-void PrintVector(const HarSet &singleSet) {
+void GFWPowerArray::PrintVector(const HarSet &singleSet) {
   int vcSize = (int)singleSet.size();
   if(!vcSize) printf("Vector is empty!\n");
   printf("{%i",singleSet[0]);
   for(int i=1;i<vcSize;i++) printf(", %i",singleSet[i]);
   printf("}\n");
 }
-HarSet GetPowerArray(vector<HarSet> inHarmonics) {
+HarSet GFWPowerArray::GetPowerArray(vector<HarSet> inHarmonics) {
   //First, find maximum number of particle correlations ( = max power) and maximum (sum of) harmonics
   int MaxHar=0;
   int nMaxPart=0;
@@ -67,7 +59,7 @@ HarSet GetPowerArray(vector<HarSet> inHarmonics) {
   for(int &val:retVec) if(val!=0) val++;
   return retVec;
 };
-void PowerArrayTest() {
+void GFWPowerArray::PowerArrayTest() {
   vector<HarSet> AllHars = {
     HarSet{2},
     HarSet{3},
@@ -80,4 +72,3 @@ void PowerArrayTest() {
   auto vc = GetPowerArray(AllHars);
   PrintVector(vc);
 };
-#endif

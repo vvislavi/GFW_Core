@@ -8,7 +8,7 @@ If used, modified, or distributed, please aknowledge the author of this code.
 #ifndef GFW__H
 #define GFW__H
 #include "GFWCumulant.h"
-#include "GFWPowerArray.C"
+#include "GFWPowerArray.h"
 #include <vector>
 #include <utility>
 #include <algorithm>

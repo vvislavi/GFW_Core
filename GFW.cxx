@@ -264,7 +264,7 @@ void GFW::InitializePowerArrays() {
   //Now, loop through all combinations of different harmonics for each region and calculate power arrays
   for(int i=0; i<(int)harSets.size();i++) {
     if(fRegions[i].powsDefined) continue; //Only do if powers have not been externally defined
-    vector<int> powerArray = GetPowerArray(harSets[i]);
+    vector<int> powerArray = GFWPowerArray::GetPowerArray(harSets[i]);
     fRegions[i].Nhar = (int)powerArray.size();
     fRegions[i].NparVec = powerArray;
     fRegions[i].powsDefined=true;
